@@ -1,0 +1,3 @@
+[submodule "xbox-controller-monitor"]
+	path = xbox-controller-monitor
+	url = https://github.com/JRavenelco/xbox-controller-monitor
