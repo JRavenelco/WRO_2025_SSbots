@@ -124,6 +124,8 @@ def initialize_Libraries():
     spike.readline() #clear buffer
     spike.write(chr(127).encode()) #suprimir linea
     spike.readline() #clear buffer
+    spike.write("fc()\r".encode())
+    spike.readline() #clear buffer
     spike.write("return 255\r".encode())
     spike.readline() #clear buffer
     end_Function()
@@ -138,6 +140,8 @@ def initialize_Libraries():
     spike.write("motor.set_duty_cycle(port.A, (100)*velocidad)\r".encode())
     spike.readline() #clear buffer
     spike.write(chr(127).encode()) #suprimir linea
+    spike.readline() #clear buffer
+    spike.write("fc()\r".encode())
     spike.readline() #clear buffer
     spike.write("return 255\r".encode())
     spike.readline() #clear buffer
@@ -278,6 +282,7 @@ def vuelta_automatica(vel,grados):
 try:# Main Program
     initialize_Libraries()
     i = 0
+    reset_gyro(0)
     while i < 8:
         i = i + 1
     #    reset_gyro()
@@ -286,7 +291,6 @@ try:# Main Program
     #   Free_spikeDirection()
     #   reset_gyro()
     #time.sleep(0.050)
-        reset_gyro(0)
         avanzar_detection(70)
         vuelta_automatica(60,91)
         reset_gyro(0)
@@ -302,7 +306,3 @@ except KeyboardInterrupt:
     spike.readline() #clear buffer
     spike.readline() #clear buffer
     Coast_motors()
-
-
-
-
