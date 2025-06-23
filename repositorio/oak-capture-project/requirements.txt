@@ -1,0 +1,5 @@
+oak-capture-project/oak-capture-project/requirements.txt
+
+depthai
+opencv-python
+numpy
