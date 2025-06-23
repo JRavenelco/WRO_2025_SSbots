@@ -58,9 +58,11 @@ if __name__ == "__main__":
     # Nodo de la cámara a color
     cam_rgb = pipeline.create(dai.node.ColorCamera)
     cam_rgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-    cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+    # Establecer la resolución máxima del sensor (13MP para OAK-D Lite)
+    cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_13_MP)
     # La salida 'still' produce un frame de alta resolución cuando se le ordena
-    cam_rgb.setStillSize(1920, 1080)
+    # Ajustar el tamaño del 'still' a la resolución máxima
+    cam_rgb.setStillSize(4208, 3120)
 
     # Nodo de entrada para el control de la cámara
     control_in = pipeline.create(dai.node.XLinkIn)
