@@ -6,11 +6,11 @@ import tty
 import termios
 
 # --- Configuración ---
-BASE_PATH = Path("/home/maker/spike_ssbots/WRO_2025_SSbots-sebas/oak/pictures")
+BASE_PATH = Path("/home/maker/spike_ssbots/WRO_2025_SSbots-sebas/oak/dataset")
 FOLDER_OPTIONS = {
     "1": {"name": "greenbox", "prefix": "g"},
     "2": {"name": "redbox", "prefix": "r"},
-    "3": {"name": "parking", "prefix": "p"},
+    "3": {"name": "combined", "prefix": "c"},
 }
 
 # --- Selección de Carpeta ---
