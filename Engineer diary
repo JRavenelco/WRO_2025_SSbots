@@ -1,1 +1,4 @@
 This folder contains updates on the changes the team has made to the robot.
+16/7/2025: Tried implementing two-speed automatic gearbox for more torque at first and then more speed,
+then temporarily removed due to complications (might improve it and use it later).
+Also worked on implementing wired ethernet connection to our workspace to guarantee a more stable internet connection.
