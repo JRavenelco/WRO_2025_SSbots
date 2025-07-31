@@ -1,1 +1,8 @@
-
+July 9th: This day we tried implementing two-speed automatic gearbox for more torque at first and then more speed, then temporarily removed due to complications (might improve it and use it later). 
+July 15th: We tested the two-speed automatic gearbox on our robot, but it wasn’t useful, so we decided not to include it.
+July 17th: After removing the two-speed automatic gearbox, we began working on a dual steering system to allow the car to turn faster and improve its performance in the challenge.
+July 20th: We made some adjustments to the dual steering system because we couldn’t connect both steering mechanisms using just one motor.
+July 23th: We designed a 3D-printed base to create a solid platform for our RPLiDAR, preventing the vibrations caused by its movement from affecting the robot.
+July 24th: After printing and mounting the base on the robot, we tested its performance and confirmed it was highly effective.
+July 26th: We finished setting up the robot and are ready to start programming.
+July 30-31th: We’re designing a 3D-printed piece that allows us to use the brick without its battery, helping us reduce the overall weight.
