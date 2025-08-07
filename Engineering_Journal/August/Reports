@@ -1,0 +1,2 @@
+August 1st - 7th: We designed and 3D-printed a battery case that protects the batteries and makes it easier to install, replace, and charge them. We had to make some adjustments because it didn’t always fit properly or the connectors were too small.
+August 6th: We implemented Dupont connector pins on the build HAT we’re using, since we don’t need to use all of its ports.
