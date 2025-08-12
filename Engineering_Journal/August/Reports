@@ -1,2 +1,4 @@
 August 1st - 7th: We designed and 3D-printed a battery case that protects the batteries and makes it easier to install, replace, and charge them. We had to make some adjustments because it didn’t always fit properly or the connectors were too small.
 August 6th: We implemented Dupont connector pins on the build HAT we’re using, since we don’t need to use all of its ports.
+August 8th: After trying to implement the build HAT, we realized the communication between the raspberry and the build Hat wasn't fast enough, so we’re now using the LEGO brick to control the motors.
+August 11th: We designed and 3D-printed cases for the light sensors to hold them at the optimal angle for detecting walls, while preventing them from mistakenly detecting the floor. We then prepared all the cables to install the sensors and begin testing.
