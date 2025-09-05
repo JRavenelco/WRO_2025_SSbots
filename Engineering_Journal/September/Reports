@@ -1,1 +1,3 @@
-
+September 1st: We started using the LiDAR to keep the robot aligned and to perform turns at the right time. However, we discovered that something was causing the LiDAR to malfunction.
+September 2nd: After running more tests to determine whether the issue was with the LiDAR itself, the code, or the robot’s structure, we discovered that the wheels were obstructing its view, preventing the LiDAR from returning accurate measurements.
+September 4th: We redesigned most of the robot to make it almost fully 3D-printed, while simultaneously fixing the issue with the LiDAR and improving the robot's structure and steering mechanism.
