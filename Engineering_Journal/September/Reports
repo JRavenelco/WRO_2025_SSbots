@@ -1,3 +1,9 @@
 September 1st: We started using the LiDAR to keep the robot aligned and to perform turns at the right time. However, we discovered that something was causing the LiDAR to malfunction.
 September 2nd: After running more tests to determine whether the issue was with the LiDAR itself, the code, or the robot’s structure, we discovered that the wheels were obstructing its view, preventing the LiDAR from returning accurate measurements.
 September 4th: We redesigned most of the robot to make it almost fully 3D-printed, while simultaneously fixing the issue with the LiDAR and improving the robot's structure and steering mechanism.
+September 7th: We reconstructed the robot with all the new pieces that had to be redesigned. We had some problems with the enclosure because it wasn't fully static and the gyroscope was over it so we changed it adding more connections to the main body.
+September 9th: We implemented the new enclosure and it was really good.
+September 11th: We kept progressing in the code and started progressing.
+September 13th: We made our first laps but we discovered the walls reflected the LiDAR's rays in a weird way so the LiDAR wasn't able to detect the walls and had delays when turning. We removed the shiny walls and it worked perfectly.
+Setember 14th: We made the hard decision of changing the LiDAR from the A1 to the S2L, which after making more tests works perfectly in any condition. We spent the day adapting the code to the new LiDAR.
+September 15th: It made his first lap! After making many changes to the robot it now works to the perfection. We're now pollishing small changes to the code so it looks and works fine.
