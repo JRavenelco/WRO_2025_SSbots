@@ -1,4 +1,4 @@
-# Engineering Journeal
+# Engineering Journal
 
 This folder contains updates on the changes the team has made to the robot. As an overview the design process was a follows.
 
@@ -11,7 +11,7 @@ In addition, the back traction system on the previous prebuilt chassis was opera
 
 That´s why after some more design and brainstorming sessions we concluded we would require more work than initially planned. But still, this kind of design and system to mount the components was considered a great idea, which could be replicated with our own design.
 
-![Ackerman Chassis](image.png)
+![Ackerman Chassis](https://www.researchgate.net/publication/379066275/figure/fig5/AS:11431281232098540@1711624752318/Construction-of-four-wheel-driving-Akerman-carrier-chassis.tif)
 
 ## First design Iteration (Full LEGO Chassis)
 One of the skills we have developed from our time in Robomission is the design of custom structures and mechanisms with the LEGO Technic system. Even though it is limiting because of how tight some components can be when integrated, and the pieces are predesigned, it allows for a standard system to be employed for integration with the definition of base Technic units well documented and the use of many prebuilt elements for rapid prototyping.
