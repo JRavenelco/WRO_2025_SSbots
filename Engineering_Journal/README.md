@@ -11,7 +11,7 @@ In addition, the back traction system on the previous prebuilt chassis was opera
 
 That´s why after some more design and brainstorming sessions we concluded we would require more work than initially planned. But still, this kind of design and system to mount the components was considered a great idea, which could be replicated with our own design.
 
-![Ackerman Chassis](https://www.researchgate.net/publication/379066275/figure/fig5/AS:11431281232098540@1711624752318/Construction-of-four-wheel-driving-Akerman-carrier-chassis.tif)
+![Ackerman Chassis](https://www.google.com/imgres?q=ackerman%20chassis&imgurl=https%3A%2F%2Fthinkrobotics.com%2Fcdn%2Fshop%2Ffiles%2F11425300d3bcbc36aa2318f39c77fc9b_b1978dda-242d-4502-91f9-2f62372b80a7_jpg_535x.webp%3Fv%3D1713148650&imgrefurl=https%3A%2F%2Fthinkrobotics.com%2Fproducts%2Fackerman-metal-chassis%3Fsrsltid%3DAfmBOopWqftblD34Ux8HnNVhLxQB5sEghdX36RHAMV_NfCnf5QQ-n8rV&docid=opsUsbFbwBrGaM&tbnid=6MH2oVMb34mT8M&vet=12ahUKEwi-94y37uCPAxV9KUQIHRWUFV4QM3oECBkQAA..i&w=535&h=535&hcb=2&ved=2ahUKEwi-94y37uCPAxV9KUQIHRWUFV4QM3oECBkQAA)
 
 ## First design Iteration (Full LEGO Chassis)
 One of the skills we have developed from our time in Robomission is the design of custom structures and mechanisms with the LEGO Technic system. Even though it is limiting because of how tight some components can be when integrated, and the pieces are predesigned, it allows for a standard system to be employed for integration with the definition of base Technic units well documented and the use of many prebuilt elements for rapid prototyping.
