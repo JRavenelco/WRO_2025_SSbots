@@ -30,7 +30,7 @@ This repository holds the engineering materials developed for a self-driving veh
 * `video` includes test videos of the vehicle in action and of the development process.
 * `schemes` contains schematic diagrams of the electromechanical components, connection diagrams and list of components used in case any other team wants to take inspiration or reproduce the vehicle after the season.
 * `src` contains the control software code for all components programmed for the competition.
-* `models` contains 3D models of custom components developed, all can be fabricated by use of a 3D printer or laser cutter. As reference a Brick link Studio Model of the main LEGO Technic elements is included.
+* `models` contains 3D models of custom components developed, all can be fabricated by use of a 3D printer or laser cutter. As reference a Brick link Studio Model and the STL files for the Technic compatible elements is included.
 * `other` contains additional reference files and documentation used for development.
 
 # Design
@@ -44,14 +44,14 @@ That´s why after some more design and brainstorming sessions we concluded we wo
 
 ![Ackerman Chassis](image.png)
 
-## Current design
+## First design Iteration (Full LEGO Chassis)
 One of the skills we have developed from our time in Robomission is the design of custom structures and mechanisms with the LEGO Technic system. Even though it is limiting because of how tight some components can be when integrated, and the pieces are predesigned, it allows for a standard system to be employed for integration with the definition of base Technic units well documented and the use of many prebuilt elements for rapid prototyping.
 [https://i.sstatic.net/83RL2.png](url)
 This left us with the decision to either integrate custom or commercial electronic components or use those available in the LEGO Mindstorms system. We decided to implement two strategies:
 - **Short term:** use the LEGO Mindstorms components to have an available robot platform to progress with software development.
-- **Explore the development of custom hardware:** first for power delivery and progress onto the embedded systems, sensors and controllers to integrate in future iterations of the robot.
+- **Explore the development of custom hardware:** for electronics (power delivery and progress onto the embedded systems) and mechanical components to integrate in future iterations of the robot.
 
-Our robot is built onto a custom LEGO Technic platform with Ackerman steering with one [Technic Large Angular Motor](https://assets.education.lego.com/v3/assets/blt293eea581807678a/bltb9abb42596a7f1b3/5f8801b5f4c5ce0e93db1587/le_spike-prime_tech-fact-sheet_45602_1hy19.pdf?locale=es-mx) for propulsion and one [Technic Medium Angular Motor](https://assets.education.lego.com/v3/assets/blt293eea581807678a/blt692436dd1e8fa71c/5f8801d5c8a27c1d9614c27e/techspecs_technicmediumangularmotor.pdf?locale=es-mx) for steering, initially we planned to use one Technic Small Angular Motor, but additional torque was required by the transmission. For reference the website [Philo Home](https://www.philohome.com/motors/motorcomp.htm) provides a great reference and comparison of the entire catalog of LEGO motors available. Sensing for obstacles is handled by an array of sensors similar to the strategies currently used in commercial vehicles:
+This iteration of the design was built onto a custom LEGO Technic platform with Ackerman steering with one [Technic Large Angular Motor](https://assets.education.lego.com/v3/assets/blt293eea581807678a/bltb9abb42596a7f1b3/5f8801b5f4c5ce0e93db1587/le_spike-prime_tech-fact-sheet_45602_1hy19.pdf?locale=es-mx) for propulsion and one [Technic Medium Angular Motor](https://assets.education.lego.com/v3/assets/blt293eea581807678a/blt692436dd1e8fa71c/5f8801d5c8a27c1d9614c27e/techspecs_technicmediumangularmotor.pdf?locale=es-mx) for steering, initially we planned to use one Technic Small Angular Motor, but additional torque was required by the transmission. For reference the website [Philo Home](https://www.philohome.com/motors/motorcomp.htm) provides a great reference and comparison of the entire catalog of LEGO motors available. Sensing for obstacles is handled by an array of sensors similar to the strategies currently used in commercial vehicles:
 - Short range with the use of [Technic Distance Sensors](https://assets.education.lego.com/v3/assets/blt293eea581807678a/blt64c2b9534cf10f68/5f8801b8bc43790f5c4389ea/techspecs_technicdistancesensor.pdf?locale=es-mx) .
 - Front range mapping with the use of [LiDAR](https://www.slamtec.com/en/lidar/a1).
 - Obstacle and object detection with the use of a [camera](https://docs.luxonis.com/hardware/products/OAK-D%20Lite).
@@ -62,6 +62,15 @@ The compute and processing side is handled by a Master-slave controller with the
 
 Power delivery is handled by a combination of the integrated power delivery network of the Large HUB and a custom one with a 4S Li-Ion battery pack and a commercial regulator from [Traco Power](https://www.tracopower.com/int/series/tmdc-20) to provide a steady 5V for the Raspberry Pi and the camera.
 Based on our tests for power consumption each battery pack with 2200mAh is capable of providing a runtime of 3 hours with the steady state current consumption of 650mA and up to 1 hour with full load at the average peak current consumption of 1880mA. This would enable us to go through a round without having a degradation of performance due to the battery discharge.
+
+## Second Design Iteration
+After the regional friendly competition, checking out the other teams designs and progressing more onto the challenges we could not solve at that time, we decided to completely redesign the robot. We needed to asses the simultaneous object detection and navigation aspects for mapping the location of the objects not just detecting them with the camera and improve on the weight distribution and traction system. We decided to include a LIDAR sensor at the front and TOF sensors arround the robot to map the objects in the track and detect the proximity of the walls while reverse parcking. For the mechanical redesign the parts where iteratively customized as to optimize weight distribution and remove unnecesary weight and volume from the robot.
+
+The key aspect for this redesign is a unibody chassis onto which all the other components are mounted, this allowed to have a lighter design with only the required mounting points and customized for each of the components.
+TODO: IMAGE UNIBODY CHASIS
+For this point we initially started by recerating in CAD the main component 
+
+
 
 ## Teamwork
 
