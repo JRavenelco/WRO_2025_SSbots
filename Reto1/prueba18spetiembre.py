@@ -1,0 +1,590 @@
+#!/usr/bin/env python3
+
+import time, queue, serial, subprocess, os, pty, threading, lgpio
+from dataclasses import dataclass
+from math import floor
+from rplidar import RPLidar, RPLidarException
+import numpy as np
+spike = None
+
+right = -1
+left = 1
+relay = 10
+led = 9
+button = 11
+
+@dataclass
+class RPlidar_data:          
+    dist_left: int  
+    dist_75: int 
+    dist_285: int
+    dist_right: int
+    dist_front: int
+    area: float
+    
+running = True  # Initial delay to allow system to stabilize
+vision_queue: "queue.Queue[RPlidar_data]" = queue.Queue(maxsize=1)
+
+PORT_NAME = "/dev/ttyUSB0"
+lidar = RPLidar(PORT_NAME,baudrate=1000000, timeout=2)
+    
+def spikeStartup(): #Start serial communication with spike
+    global spike
+    
+    try:
+        spike = serial.Serial("/dev/ttyACM0", 115200, timeout=2)
+        time.sleep(1.0)
+        print("Serial connection to SPIKE established.")
+    except Exception as e:
+        print(f"Failed to open serial port: {e}")
+        spike = None
+        
+    time.sleep(0.1)
+    spike.write(b'\x03') #Ctrl+C
+    time.sleep(0.1)
+
+
+    
+def endFunction(): #Sends empty lines to spike to end a function
+    spike.write("\r".encode())
+    spike.readline() 
+    spike.write("\r".encode())
+    spike.readline()
+    spike.write("\r".encode())
+    spike.readline()
+
+def spikeLibraries(): #Initializes libraries and functions in spike
+    #import libraries
+    spike.write("import motor\r".encode()) 
+    spike.readline()
+    spike.write("from hub import port\r".encode())
+    spike.readline()
+    spike.write("from hub import motion_sensor\r".encode())
+    spike.readline()
+    spike.write("import distance_sensor\r".encode())
+    spike.readline()
+    spike.write("import runloop\r".encode()) 
+    spike.readline()
+    #declare global variables for spike
+    spike.write("right = -1\r".encode())
+    spike.readline() 
+    spike.write("left = 1\r".encode())
+    spike.readline() 
+    spike.write("error = 0\r".encode())
+    spike.readline() 
+    #declare functions for motors
+    spike.write("def hd():\r".encode())#HOLD MOTORS
+    spike.readline()  
+    spike.write("motor.stop(port.F, stop = motor.HOLD)\r".encode())
+    spike.readline()  
+    spike.write("motor.stop(port.B, stop = motor.HOLD)\r".encode())
+    spike.readline() 
+    endFunction()
+
+    spike.write("def fc():\r".encode()) #FREE COAST MOTORS
+    spike.readline()  
+    spike.write("motor.stop(port.F, stop = motor.COAST)\r".encode())
+    spike.readline()  
+    spike.write("motor.stop(port.B, stop = motor.COAST)\r".encode())
+    spike.readline() 
+    endFunction()
+
+    # centrar el vehiculo normal
+    spike.write("async def cv_especial():\r".encode())
+    spike.readline() #clear buffer 
+    spike.write("await motor.run_to_relative_position(port.F, 0, 550,\r".encode())
+    spike.readline()#clear buffemotor.stop(port.F, stop = motor.COAST)r
+    spike.write("stop = motor.COAST, acceleration = 1000, deceleration = 1000)\r".encode())
+    spike.readline() #clear buffer
+    endFunction()
+
+    spike.write("def cv():\r".encode())
+    spike.readline() #clear buffer 
+    spike.write("runloop.run(cv_especial())\r".encode())
+    spike.readline()#clear buffemotor.stop(port.F, stop = motor.COAST)r
+    spike.write("return 255\r".encode())
+    spike.readline() #clear buffer
+    endFunction()
+
+    spike.write("def pd(s1,s2,vel,kp,kd,ea):\r".encode()) #PROPORTIONAL DERIVATIVE CONTROL #ea is the previous error
+    spike.readline()  
+    spike.write("error=s1-s2\r".encode())
+    spike.readline()
+    spike.write("et= (kp*error) + (kd*(error-ea))\r".encode()) #et is the total error
+    spike.readline()
+    spike.readline() 
+    spike.write("motor.run_to_absolute_position(port.F, int(et), 1100, direction = motor.SHORTEST_PATH, stop = motor.COAST, acceleration = 10000)\r".encode())
+    spike.readline() 
+    spike.write("motor.set_duty_cycle(port.B, (-100)*(vel))\r".encode())
+    spike.readline() 
+    spike.write("return error\r".encode())
+    spike.readline() 
+    endFunction()
+
+    spike.write("def rg(degrees):\r".encode()) #RESET GYRO
+    spike.readline() 
+    spike.write("motion_sensor.reset_yaw(degrees)\r".encode())
+    spike.readline() 
+    endFunction()
+
+    spike.write("def ad(vel,reference):\r".encode()) #FORWARD WITH GYRO
+    spike.readline() 
+    spike.write("global error\r".encode())
+    spike.readline() 
+    spike.write("error = pd(((10)*(reference)),motion_sensor.tilt_angles()[0],vel,0.5,1,error)\r".encode())
+    spike.readline()  
+    endFunction()
+
+    spike.write("def turn(side,speed,degrees):\r".encode()) #TURN
+    spike.readline() 
+    spike.write("motor.run_to_absolute_position(port.F, 140*(side), 1100, stop = motor.HOLD, acceleration = 10000)\r".encode())
+    spike.readline() 
+    spike.write("while abs(degrees*10) > abs(motion_sensor.tilt_angles()[0]):\r".encode())
+    spike.readline() 
+    spike.write("motor.set_duty_cycle(port.B, (-100)*(speed))\r".encode())
+    spike.readline() 
+    spike.write(chr(127).encode()) #SUPR
+    spike.readline() 
+    spike.write("fc()\r".encode())   
+    spike.readline() 
+    spike.write("return 255\r".encode())
+    spike.readline() 
+    endFunction()
+    endFunction()
+
+    spike.write("def da(vel, reference):\r".encode()) #DETECT AND GO FORWARD
+    spike.readline() 
+    spike.write("global error\r".encode())
+    spike.readline() 
+    spike.write("error = pd((reference)*10,motion_sensor.tilt_angles()[0],vel,0.5,10,error)\r".encode())
+    spike.readline() 
+    endFunction()
+
+    spike.write("def ag(vel,degrees,reference):\r".encode())
+    spike.readline() 
+    spike.write("error = 0\r".encode())
+    spike.readline() 
+    spike.write("motor.reset_relative_position(port.B,0)\r".encode())
+    spike.readline() 
+    spike.write("while abs(degrees) > abs(motor.relative_position(port.B)):\r".encode())
+    spike.readline() 
+    spike.write("error = pd(((10)*(reference)),motion_sensor.tilt_angles()[0],vel,0.5,1,error)\r".encode())
+    spike.readline() 
+    spike.write(chr(127).encode()) #SUPR
+    spike.readline() 
+    spike.write("fc()\r".encode())
+    spike.readline() 
+    spike.write("return 255\r".encode())
+    spike.readline() 
+    endFunction()
+    endFunction()
+    
+def resetSteering():
+    spike.write("cv()\r".encode())
+    spike.readline() #limpia el buffer 
+    return_value = spike.readline().decode()
+    if return_value == "":
+        return_value = "0"
+    while int(return_value) != 255:
+        return_value = spike.readline().decode()
+        if return_value == "":
+            return_value = "0"
+
+def motorHold():
+    spike.write("hd()\r".encode())
+    spike.readline() 
+
+def motorCoast():
+    spike.write("fc()\r".encode())
+    spike.readline() 
+    
+def gyroReset(degrees):
+    spike.write(("rg("+str(degrees)+")\r").encode())
+    spike.readline() 
+    
+def turn(side,speed,degrees):
+    spike.write(("turn("+str(side)+","+str(speed)+","+str(degrees)+")\r").encode())
+    spike.readline() 
+    return_value = spike.readline().decode()
+    if return_value == "":
+        return_value = "0"
+    while int(return_value) != 255:
+        return_value = spike.readline().decode()
+        if return_value == "":
+            return_value = "0"
+    motorHold()
+    
+def findVoid(vel,reference):
+    try:
+        obj = vision_queue.get()
+        leftDistance = obj.dist_left
+        rightDistance = obj.dist_right
+        print("left: ", leftDistance, " right: ", rightDistance)
+        while obj.dist_left < 1350 and obj.dist_right < 1350:
+            spike.write(("da("+str(vel)+","+str(reference)+")\r").encode())
+            spike.readline() 
+            if vision_queue.full():
+                obj = vision_queue.get()
+        if obj.dist_left >= 1350:
+            void = left
+            print("void on the left\n")
+        elif obj.dist_right >= 1350:
+            void = right
+            print("void on the right\n")
+        motorCoast()
+    except queue.Empty:
+        pass
+    except KeyboardInterrupt:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+        motorCoast()
+    return [void, leftDistance, rightDistance]
+        
+def forwardVoid(vel,reference,leftOrRight):
+    while not vision_queue.full():
+        print("QUEUE NOT FULL YET\n")
+        time.sleep(0.01)
+        pass
+    obj = vision_queue.get()
+    if leftOrRight == left:
+        while obj.dist_left < 1350:
+            spike.write(("da("+str(vel)+","+str(reference)+")\r").encode())
+            spike.readline() 
+            if vision_queue.full():
+                obj = vision_queue.get()
+        motorCoast()
+    elif leftOrRight == right:
+        while obj.dist_right < 1350:
+            spike.write(("da("+str(vel)+","+str(reference)+")\r").encode())
+            spike.readline() 
+            if vision_queue.full():
+                obj = vision_queue.get()
+        motorCoast()
+
+def lidarDistanceForward(vel,reference,distance):
+    while not vision_queue.full():
+        print("QUEUE NOT FULL YET\n")
+        time.sleep(0.01)
+        pass
+    obj = vision_queue.get()
+    print("first dist front: ", obj.dist_front)
+    while obj.dist_front > distance:
+        spike.write(("da("+str(vel)+","+str(reference)+")\r").encode())
+        spike.readline() 
+        if vision_queue.full():
+            obj = vision_queue.get()
+    print("final dist front: ", obj.dist_front)
+    motorCoast()
+
+def goForward(speed,degrees,reference):
+    spike.write(("ag("+str(speed)+","+str(degrees)+","+str(reference)+")\r").encode())
+    spike.readline() 
+    return_value = spike.readline().decode()
+    if return_value == "":
+        return_value = "0"
+    while int(return_value) != 255:
+        return_value = spike.readline().decode()
+        if return_value == "":
+            return_value = "0"
+    motorCoast()
+
+def radiansToDegrees(radianes):
+    degrees : int = (radianes)*(180/np.pi)
+    return degrees
+
+def dos_puntos(speed, degrees, reference,leftOrRight):
+    while not vision_queue.full():
+        print("QUEUE NOT FULL YET\n")
+        time.sleep(0.01)
+        pass
+    obj = vision_queue.get()
+    if leftOrRight == left:
+        print("left")
+        y1 = obj.dist_left
+    elif leftOrRight == right:
+        print("right")
+        y1 = obj.dist_right
+    else:
+        print("no hay leftOrRight")
+    spike.write(("ag("+str(speed)+","+str(degrees)+","+str(reference)+")\r").encode())
+    spike.readline() 
+    return_value = spike.readline().decode()
+    if return_value == "":
+        return_value = "0"
+    while int(return_value) != 255:
+        return_value = spike.readline().decode()
+        if return_value == "":
+            return_value = "0"
+    motorCoast()
+    while not vision_queue.full():
+        print("ESPERANDO EL QUEVE PARA EL PUNTO IZQUIERDO\n")
+    obj = vision_queue.get()
+    if leftOrRight == left:
+        print("left")
+        y2 = obj.dist_left
+    elif leftOrRight == right:
+        print("right")
+        y2 = obj.dist_right
+    else:
+        print("no hay leftOrRight")
+    variacion = y2 - y1
+    pendiente = int(radiansToDegrees(np.arctan(variacion / abs(175*degrees/360)))*-10)
+    print(pendiente)
+    return pendiente
+
+
+#funcion que habilita el acceso a los gpio
+def setup_gpio():
+    global relay, led, button
+    try:
+        h = lgpio.gpiochip_open(0) #se habilita el acceso a los gpio
+        lgpio.gpio_claim_input(h, button)
+        lgpio.gpio_claim_output(h, relay)
+        lgpio.gpio_claim_output(h, led)
+        lgpio.gpio_write(h, relay, 1)
+        lgpio.gpio_write(h, led, 0) #TURN OFF LED (ROBOT NOT READY)
+        time.sleep(1)
+        """
+        for sensor in SENSORS:
+            lgpio.gpio_claim_output(h, sensor.pin_gpio_enable)
+            lgpio.gpio_write(h, sensor.pin_gpio_enable, 0)
+            time.sleep(0.5)
+        for sensor in SENSORS:
+            lgpio.gpio_write(h, sensor.pin_gpio_enable, 1)
+            time.sleep(0.5)
+            sensor.identifier = adafruit_vl53l1x.VL53L1X(i2c)
+            print(sensor.identifier.model_info)
+            sensor.identifier.distance_mode = 1
+            sensor.identifier.timing_budget = 33
+            sensor.identifier.roi_center = 199
+            print(sensor.identifier.roi_center) 
+            sensor.identifier.roi_xy = (16,8)
+            print(sensor.identifier.roi_xy) 
+            sensor.identifier.set_address(sensor.slave_address)
+        """
+        lgpio.gpio_write(h, relay, 0)
+        print("GPIO inicializados")
+        return h, True
+    except Exception as e:
+        print(f"Error al inicializar sensores: {e}")
+        return h, False
+    except KeyboardInterrupt:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+        motorCoast()
+
+#funcion que limpia los gpio
+def cleanup_gpio(h):
+    try:
+        lgpio.gpio_write(h, relay, 1)
+        lgpio.gpio_free(h, button)
+        lgpio.gpiochip_close(h)
+        print("GPIO libres")
+    except KeyboardInterrupt:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+        motorCoast()
+    except Exception as e:
+        print(f"Error al limpiar GPIO: {e}")   
+
+def main_(h):
+    global running
+    #lidar.start_motor()
+    #lidar.start() # star scaning measurements
+    time.sleep(3)  # Give motor time to spin up
+    while not vision_queue.full():
+        #print("WAITING FOR QUEUE TO BE FILLED\n")
+        time.sleep(0.01)
+        pass
+    v = 0
+    """
+    lgpio.gpio_write(h, led, 1) #TURN ON LED (ROBOT READY)
+    print("PRESS BUTTON TO START\n")
+    while lgpio.gpio_read(h, button) == 1: #WAIT FOR BUTTON PRESS
+        time.sleep(0.01)
+        pass
+    lgpio.gpio_write(h, led, 0) #TURN OFF LED (BUTTON PRESSED)
+    """
+    resetSteering()
+    [leftOrRight, leftDistance, rightDistance] = findVoid(85,0)
+    if leftOrRight == right:
+        goForward(85,300,0)
+    elif leftOrRight == left:
+        pass
+    turn(leftOrRight,60,85)
+    resetSteering()
+    
+    if leftOrRight == left:
+        goForward(85,((leftDistance/175)*360)+400,90*leftOrRight)
+    elif leftOrRight == right:
+        goForward(85,((rightDistance/175)*360)+400,90*leftOrRight)
+        
+    while v < 3: #number of corrections return to 11
+        gyroReset(0)
+        angulo = dos_puntos(85,1000,0,leftOrRight)
+        """
+        print("angulo: ", angulo,"\n")
+        if angulo <35 and angulo > 10:
+            angulo = 35
+        elif angulo > -35 and angulo < -10:
+            angulo = -35
+        if leftOrRight == left:
+            angulo = int(angulo)
+        elif leftOrRight == right:
+            angulo = int(angulo)*-1
+        """
+        print("correccion: ", angulo,"\n")
+        gyroReset(angulo)
+        time.sleep(0.01)
+        
+        forwardVoid(85,0,leftOrRight)
+        if leftOrRight == right:
+            goForward(85,300,0)
+        elif leftOrRight == left:
+            pass
+        turn(leftOrRight,60,85)
+        resetSteering()
+        goForward(85,500,90*leftOrRight)
+        v += 1
+        
+    gyroReset(0)
+    lidarDistanceForward(85,0,1650)
+    running = False
+    print(" ================================ RPLIDAR THREAD ENDING ================================= ")
+
+def lidarWorker():
+    global running, spike
+    h, success = setup_gpio()
+    try:
+        lidar.connect()
+        info = lidar.get_info()
+        for key, value in info.items():
+            print('{0:<13}: {1}'.format(key.capitalize(), str(value)))
+
+        health = lidar.get_health()
+        print('Health Status: {0[0]} - {0[1]}'.format(health))
+
+        
+        print('*' * 50)
+        
+        lidar.start_motor()
+        time.sleep(4)  # Give motor time to spin up
+
+    
+        spikeStartup()
+        spikeLibraries()
+        print("empezando ....\n")
+        
+        gyroReset(0)
+        
+        while running:
+            try:
+                #lidar.start() # star scaning measurements       
+                try:
+                    angles = [0]*360 # array de 360 lugares para guardar las medidas del lidar
+                    iterator = lidar.iter_scans(max_buf_meas=32000,min_len=10)
+                    threading.Thread(target=main_,args=(h,),daemon=True).start()
+                    time.sleep(2)
+                    for scan in iterator:
+                        for (_, angle, distance) in scan:
+                            if distance is not None:
+                                angles[min([359,floor(angle)])] = distance
+                        time.sleep(0.001)
+                        #print(angles[0],angles[90],angles[270])
+                        lidar_data = RPlidar_data(angles[90],angles[75],angles[285],angles[270],angles[0],time.time())
+                        if vision_queue.full(): #check if the queue is full
+                            try:
+                                #print("queue full")
+                                vision_queue.get() # erase old values from the queue to have latest information 
+                            except vision_queue.not_empty:
+                                pass
+                            except KeyboardInterrupt:
+                                lidar.stop()
+                                lidar.stop_motor()
+                                lidar.disconnect()
+                                motorCoast()
+                        vision_queue.put(lidar_data) #load new data on the queue
+                        vision_queue.task_done()
+                        if running == False:
+                            break
+                    lidar.stop()
+                    lidar.stop_motor()
+                    lidar.disconnect()
+                    motorCoast()
+                    
+
+                except RPLidarException as e:
+                    print("error in lidar:", e)
+                    lidar.clean_input()
+                    lidar.stop()
+                    lidar.stop_motor()
+                    lidar.disconnect()
+                    motorCoast()
+                    running = False
+                except Exception as e:
+                    print("error in lidar-aritmetica:", e)
+                    lidar.clean_input()
+                    lidar.stop()
+                    lidar.stop_motor()
+                    lidar.disconnect()
+                    motorCoast()
+                    running = False
+                except KeyboardInterrupt:
+                    lidar.stop()
+                    lidar.stop_motor()
+                    lidar.disconnect()
+                    motorCoast()
+                    print("Stopping.")
+                    running = False
+                
+                #distancias = distance_queue.get_nowait()
+                        
+                #angulo_correccion = correccion(15)
+
+                """if vision_queue.full():
+                    try:
+                        obj = vision_queue.get_nowait()
+                        print(obj.dist_left, obj.dist_75, obj.dist_315, obj.dist_right)
+                    except queue.Empty:
+                        pass"""
+                
+                running = False
+    
+            except KeyboardInterrupt:
+                print("\nProgram interrupted! Cleaning up...")
+                spike.write(chr(3).encode())
+                spike.readline() 
+                spike.readline() 
+                spike.readline() 
+                motorCoast()
+                spike.close()
+                print("\nStopping...")
+                running = False
+                cleanup_gpio(h)
+                lidar.stop()
+                lidar.stop_motor()
+                lidar.disconnect()
+                spike.close()
+                running = False
+                break
+            
+            
+    except Exception as e:
+        print(f"Error: {e}")
+        cleanup_gpio(h)
+    except KeyboardInterrupt:
+        lidar.stop()
+        lidar.stop_motor()
+        lidar.disconnect()
+        motorCoast()
+    finally:
+        running = False
+        lidar.stop()
+        lidar.disconnect()
+        cleanup_gpio(h)
+
+lidarWorker()
+print("Exiting...")
